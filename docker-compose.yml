@@ -1,0 +1,64 @@
+version: '3.9'
+
+services:
+  nginx:
+    container_name: levali-ngnix
+    image: nginx:1.23.3
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+    ports:
+      - "5000:5000"
+
+  api:
+    build: 
+      context: ./src
+      dockerfile: ./Levali.Api/Dockerfile
+    # ports:
+    #   - 80
+    restart: always
+    depends_on:
+      - sqlserver
+      - redis
+      - seq
+    environment:
+      - DbConnectionString=Server=sqlserver;Database=master;User=sa;Password=SqlServer2022!
+      - RedisConnectionString=redis:6379
+      - SecretKey=419d58af-a289-4667-adca-0a6d6ad9d566
+      
+  redis:
+      image: redis:7.0.0
+      container_name: levali-redis
+      command: bash -c "redis-server --appendonly no"
+      ports:
+          - 6379:6379
+      restart: always
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-CU4-ubuntu-20.04
+    container_name: levali-sqlserver
+    environment:
+      SA_PASSWORD: "SqlServer2022!"
+      ACCEPT_EULA: "Y"
+      # MSSQL_PID: "Developer"
+      MSSQL_AGENT_ENABLED: "true"
+    ports:
+      - "1433:1433"
+    volumes:
+      - ./tools/db-scripts:/docker-entrypoint-initdb.d
+  
+  seq:
+    image: datalust/seq:2023.3
+    container_name: levali-seq
+    ports:
+      - '5342:80'
+    environment:
+      - ACCEPT_EULA=Y
+    # volumes:
+    #   - ./seq-data:/data
+
+
+# Preparar banco de dados
+# docker exec -it levali-sqlserver bash
+# cd docker-entrypoint-initdb.d/ && ./init-db.sh && exit
