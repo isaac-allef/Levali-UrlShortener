@@ -5,20 +5,38 @@ namespace Levali.Core;
 
 public sealed class LazyRemoveService : IHostedService, IDisposable
 {
-    private readonly ISubscriber _subscriber;
+    private readonly IDequeueer _dequeueer;
     private readonly IShortUrlRepository _shortUrlRepository;
     private readonly Serilog.ILogger _logger;
+    private Timer? _timer;
 
-    public LazyRemoveService(ISubscriber subscriber, IShortUrlRepository shortUrlRepository, Serilog.ILogger logger)
+    public LazyRemoveService(IDequeueer dequeueer, IShortUrlRepository shortUrlRepository, Serilog.ILogger logger)
     {
-        _subscriber = subscriber;
+        _dequeueer = dequeueer;
         _shortUrlRepository = shortUrlRepository;
         _logger = logger;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        await _subscriber.SubscribeAsync<ShortUrlEntity>("expired", async (shortUrl) =>
+        _timer = new Timer(
+            async callback => await ProcessQueue(),
+            null,
+            dueTime: TimeSpan.FromSeconds(30),
+            period: TimeSpan.FromSeconds(5)
+        );
+        await Task.CompletedTask;
+    }
+
+    public async Task StopAsync(CancellationToken cancellationToken)
+    {
+        await Task.CompletedTask;
+    }
+
+    private async Task ProcessQueue()
+    {
+        var shortUrl = await _dequeueer.DequeueAsync<ShortUrlEntity>("expired");
+        if (shortUrl is not null)
         {
             using (LogContext.PushProperty(nameof(shortUrl.UserId), shortUrl.UserId))
             {
@@ -27,15 +45,11 @@ public sealed class LazyRemoveService : IHostedService, IDisposable
                     .ForContext(nameof(shortUrl.Code), shortUrl.Code)
                     .Information("Expired short URL deleted successfully");
             }
-        });
-    }
-
-    public async Task StopAsync(CancellationToken cancellationToken)
-    {
-        await Task.CompletedTask;
+        }
     }
 
     public void Dispose()
     {
+        _timer?.Dispose();
     }
 }

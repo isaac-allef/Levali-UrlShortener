@@ -11,8 +11,6 @@ public static class DependencyInjectionConfig
         services.AddSingleton<Serilog.ILogger>(logger);
 
         services.AddTransient(d => new DbSession(configuration["DbConnectionString"]));
-        // services.AddTransient<IPublisher>(p => new RedisPubSub(configuration["RedisConnectionString"], logger));
-        // services.AddTransient<ISubscriber>(s => new RedisPubSub(configuration["RedisConnectionString"], logger));
 
         services.AddTransient<IEnqueueer>(e => new RedisQueue(configuration["RedisConnectionString"], logger));
         services.AddTransient<IDequeueer>(d => new RedisQueue(configuration["RedisConnectionString"], logger));
@@ -26,7 +24,7 @@ public static class DependencyInjectionConfig
         services.AddTransient(e => new Lazy<EnlargeShortUrlService>(e.GetRequiredService<EnlargeShortUrlService>));
         services.AddScoped<Notification>();
 
-        // services.AddHostedService<UpdateAnalyticsService>();
-        // services.AddHostedService<LazyRemoveService>();
+        services.AddHostedService<UpdateAnalyticsService>();
+        services.AddHostedService<LazyRemoveService>();
     }
 }

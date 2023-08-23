@@ -20,10 +20,10 @@ public sealed class UpdateAnalyticsService : IHostedService, IDisposable
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         _timer = new Timer(
-            async call => await ProcessQueue(),
+            async callback => await ProcessQueue(),
             null,
-            TimeSpan.FromMinutes(2),
-            TimeSpan.FromSeconds(1)
+            dueTime: TimeSpan.FromSeconds(30),
+            period: TimeSpan.FromSeconds(1)
         );
         await Task.CompletedTask;
     }
