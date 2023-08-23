@@ -13,8 +13,8 @@ EXEC dbo.sp_add_schedule
     @schedule_name = N'RunDelete',              --Schedule Name
     @freq_type = 4,                             --Only one day execution  
 	@freq_interval = 1,
-    @freq_subday_type = 0x2,                    --Execution interval in seconds  
-	@freq_subday_interval = 60;                 --Execution interval 
+    @freq_subday_type = 0x4,                    --Execution interval in minutes  
+	@freq_subday_interval = 2;                  --Execution interval 
   
 EXEC sp_attach_schedule  
    @job_name = N'Delete expired short urls',  

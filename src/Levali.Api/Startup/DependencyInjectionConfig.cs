@@ -25,6 +25,5 @@ public static class DependencyInjectionConfig
         services.AddScoped<Notification>();
 
         services.AddHostedService<UpdateAnalyticsService>();
-        services.AddHostedService<LazyRemoveService>();
     }
 }

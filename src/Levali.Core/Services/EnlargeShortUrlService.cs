@@ -1,4 +1,5 @@
 ﻿using Serilog;
+using Serilog.Context;
 
 namespace Levali.Core;
 
@@ -29,19 +30,40 @@ public sealed class EnlargeShortUrlService
             return null;
         }
 
-        if (shortUrl.ExpirationAt is not null
-            && shortUrl.ExpirationAt < DateTime.UtcNow)
+        using (LogContext.PushProperty(nameof(shortUrl.UserId), shortUrl.UserId))
+        using (LogContext.PushProperty(nameof(shortUrl.Code), shortUrl.Code))
         {
-            await _enqueueer.EnqueueAsync(queueName: "expired", shortUrl);
-            return null;
+            if (shortUrl.ExpirationAt is not null
+                && shortUrl.ExpirationAt < DateTime.UtcNow)
+            {
+                await LazyRemoveShortUrl(shortUrl.Code);
+                return null;
+            }
+
+            await _enqueueer.EnqueueAsync(queueName: "click", shortUrl);
+
+            _logger.Information("Enlarge URL successfully");
+
+            return shortUrl.TargetUrl;
         }
+    }
 
-        await _enqueueer.EnqueueAsync(queueName: "click", shortUrl);
-
-        _logger
-            .ForContext(nameof(code), code)
-            .Information("Enlarge URL successfully");
-
-        return shortUrl.TargetUrl;
+    private async Task LazyRemoveShortUrl(string code)
+    {
+        try
+        {
+            await _shortUrlRepository.Remove(code);
+            _logger
+                .ForContext(nameof(code), code)
+                .Information("Expired short URL deleted successfully");
+        }
+        catch(Exception ex)
+        {
+            _logger
+                .ForContext(nameof(Exception), ex, destructureObjects: true)
+                .Error("Error to delete expired short URL");
+            
+            throw;
+        }
     }
 }
