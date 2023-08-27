@@ -2,12 +2,19 @@
 
 Levali is a URL shortener that counts clicks.
 
+## Features
+- [x] URL shortening;
+- [x] Click count;
+- [x] URLs expiration;
+- [x] Lazy removal of expired URLs from the database;
+- [x] Periodically run a job to remove expired URLs from the database.
+
 ## System Design
 <p align="center">
    <img src="assets/levali-system-design.png" width="100%"/>
 </p>
 
-## Como usar?
+## How to use?
 After cloning the project to your machine you can use the following commands:
 ```bash
 # Run application
